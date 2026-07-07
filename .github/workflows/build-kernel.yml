@@ -318,6 +318,13 @@ jobs:
         # "clang: no such file or directory: 'false'". Unset the collisions.
         unset DISABLE_LTO DISABLE_CC_WERROR FIX_WIFI_SPEED
         make -j$(nproc --all) CC="$CC" O=out ARCH=${{ env.KERNEL_ARCH }} ${{ env.EXTRA_CMDS }} ${{ env.KERNEL_CONFIG }}
+        # CONFIG_KSU depends on KPROBES && EXT4_FS; if a dep is unmet olddefconfig
+        # silently drops it and ships a rootless kernel. Fail fast instead.
+        if [ ${{ env.ENABLE_KERNELSU }} = true ] && ! grep -q '^CONFIG_KSU=y' out/.config; then
+            echo "ERROR: CONFIG_KSU=y was dropped from .config (unmet dependency, e.g. KPROBES). Aborting."
+            grep -E 'CONFIG_KPROBES|CONFIG_EXT4_FS|CONFIG_KSU' out/.config || true
+            exit 1
+        fi
         make -j$(nproc --all) CC="$CC" O=out ARCH=${{ env.KERNEL_ARCH }} ${{ env.EXTRA_CMDS }}
 
     - name: Check a kernel output files
