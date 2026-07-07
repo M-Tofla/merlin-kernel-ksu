@@ -312,6 +312,11 @@ jobs:
         if [ ${{ env.ENABLE_CCACHE }} = true ]; then
           CC="ccache $CC"
         fi
+        # config.env keys are exported into the environment; some collide with
+        # kernel Makefile variables. DISABLE_LTO=false leaks into
+        # scripts/mod/Makefile ($(DISABLE_LTO)) and breaks empty.o with
+        # "clang: no such file or directory: 'false'". Unset the collisions.
+        unset DISABLE_LTO DISABLE_CC_WERROR FIX_WIFI_SPEED
         make -j$(nproc --all) CC="$CC" O=out ARCH=${{ env.KERNEL_ARCH }} ${{ env.EXTRA_CMDS }} ${{ env.KERNEL_CONFIG }}
         make -j$(nproc --all) CC="$CC" O=out ARCH=${{ env.KERNEL_ARCH }} ${{ env.EXTRA_CMDS }}
 
